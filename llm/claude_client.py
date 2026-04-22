@@ -32,6 +32,29 @@ def _build_system_blocks(submission_id: int, tier: str, categories: list[str], m
     ]
 
 
+DEMO_RESPONSE_TEMPLATE = """\
+**[DEMO MODE - simulated response]**
+
+*In production this response comes from Claude claude-sonnet-4 via the gated passthrough. \
+The prompt below was received after redaction by the classification layer.*
+
+---
+
+Acknowledged. I have received your prompt with the following governance context:
+
+- Risk tier: **{tier}**
+- Detected categories: {categories}
+- Match count: {match_count}
+- Encoding detected: {encoding}
+
+The redacted input has been processed. In a live environment I would respond to the \
+substance of your request here. To enable real Claude responses, add your \
+`ANTHROPIC_API_KEY` to the Streamlit secrets configuration.
+
+*Submission ID: {submission_id}*
+"""
+
+
 def send_to_claude(
     submission_id: int,
     tier: str,
@@ -39,7 +62,18 @@ def send_to_claude(
     match_count: int,
     encoding: str | None,
     redacted_input: str,
+    demo_mode: bool = False,
 ) -> tuple[str, str | None]:
+    if demo_mode:
+        response_text = DEMO_RESPONSE_TEMPLATE.format(
+            tier=tier,
+            categories=", ".join(categories) if categories else "none",
+            match_count=match_count,
+            encoding=encoding or "none",
+            submission_id=submission_id,
+        )
+        return response_text, "demo-response"
+
     api_key = st.secrets.get("ANTHROPIC_API_KEY")
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY not configured in Streamlit secrets.")

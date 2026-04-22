@@ -22,7 +22,7 @@ TIER_LABELS = {
 INPUT_CAP = 50_000
 
 
-def render(registry: PatternRegistry, disabled_categories: set[str]):
+def render(registry: PatternRegistry, disabled_categories: set[str], demo_mode: bool = False):
     st.header("Prompt Analyzer")
     text = st.text_area("Prompt to analyze", height=250, key="analyzer_input")
 
@@ -108,12 +108,10 @@ def render(registry: PatternRegistry, disabled_categories: set[str]):
             help=f"Blocked: {', '.join(blocked_names)}",
         )
     else:
-        api_key_present = bool(st.secrets.get("ANTHROPIC_API_KEY"))
-        btn_label = "Send to Claude with risk annotation"
-        if not api_key_present:
-            st.button(btn_label, disabled=True, help="ANTHROPIC_API_KEY not configured in Streamlit secrets.")
-        elif st.button(btn_label, type="secondary"):
-            with st.spinner("Sending to Claude..."):
+        btn_label = "Send to Claude with risk annotation (Demo)" if demo_mode else "Send to Claude with risk annotation"
+        if st.button(btn_label, type="secondary"):
+            spinner_msg = "Generating demo response..." if demo_mode else "Sending to Claude..."
+            with st.spinner(spinner_msg):
                 try:
                     response_text, response_id = send_to_claude(
                         submission_id=last["submission_id"],
@@ -122,6 +120,7 @@ def render(registry: PatternRegistry, disabled_categories: set[str]):
                         match_count=last["match_count"],
                         encoding=last["encoding_detected"],
                         redacted_input=last["redacted"],
+                        demo_mode=demo_mode,
                     )
                     mark_passed_to_llm(last["submission_id"], response_id)
                     st.session_state["last_result"]["llm_response"] = response_text

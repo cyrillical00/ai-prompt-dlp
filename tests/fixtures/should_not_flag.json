@@ -1,0 +1,107 @@
+[
+  {
+    "id": 1,
+    "label": "benign_summary_request",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "Can you summarize the quarterly report for me? I need a bullet point overview."
+  },
+  {
+    "id": 2,
+    "label": "timestamp_not_dob",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "The event was logged at 2024-11-15T09:23:01Z during the incident window."
+  },
+  {
+    "id": 3,
+    "label": "order_id_not_ssn",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "Order ID: 847291034 has been shipped and should arrive Thursday."
+  },
+  {
+    "id": 4,
+    "label": "public_url_not_credential",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "You can find the docs at https://docs.example.com/api/v2/reference"
+  },
+  {
+    "id": 5,
+    "label": "already_redacted_email",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "The user email has been masked: j***@***.com for privacy compliance."
+  },
+  {
+    "id": 6,
+    "label": "example_placeholder_key",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "Replace YOUR_API_KEY_HERE with your actual key in the config file."
+  },
+  {
+    "id": 7,
+    "label": "xxxx_credit_card",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "Card ending in xxxx-xxxx-xxxx-4242 was charged $99.00."
+  },
+  {
+    "id": 8,
+    "label": "ip_address_not_ssn",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "The server at 192.168.100.254 returned a 503 error during the health check."
+  },
+  {
+    "id": 9,
+    "label": "us_phone_already_masked",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "Callback number on file: ***-***-5678"
+  },
+  {
+    "id": 10,
+    "label": "code_snippet_no_secrets",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "def fetch_data(url, headers):\n    response = requests.get(url, headers=headers)\n    return response.json()"
+  },
+  {
+    "id": 11,
+    "label": "fake_luhn_fail_cc",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "The test number 1234567890123456 was used in a unit test scenario."
+  },
+  {
+    "id": 12,
+    "label": "routing_no_context",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "The transaction reference number is 021000021 in our system."
+  },
+  {
+    "id": 13,
+    "label": "hash_not_credential",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "Git commit SHA: a3f8c2d1b4e9f0123456789abcdef0123456789a was deployed to prod."
+  },
+  {
+    "id": 14,
+    "label": "sample_data_marker",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "Use test@example.com as the demo account in all staging environments."
+  },
+  {
+    "id": 15,
+    "label": "benign_hr_question",
+    "expected_tier": "LOW",
+    "expected_categories": [],
+    "input": "What is the company policy on remote work for full-time employees hired after 2023?"
+  }
+]

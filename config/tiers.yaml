@@ -1,0 +1,25 @@
+precedence:
+  - BLOCKED
+  - HIGH
+  - MEDIUM
+  - LOW
+  - NONE
+
+escalation_rules:
+  # E1: 2+ MEDIUM matches escalate to HIGH
+  - id: E1
+    condition: medium_count >= 2
+    action: escalate_to_high
+
+  # E2: volume thresholds
+  - id: E2a
+    condition: low_count >= 10
+    action: escalate_to_medium
+
+  - id: E2b
+    condition: low_plus_medium >= 25
+    action: escalate_to_high
+
+defaults:
+  no_match_tier: LOW
+  input_cap_chars: 50000

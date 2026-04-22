@@ -1,0 +1,125 @@
+regex_patterns:
+  # CREDENTIAL - BLOCKED
+  - name: aws_access_key
+    category: CREDENTIAL
+    pattern: 'AKIA[0-9A-Z]{16}'
+    tier: BLOCKED
+
+  - name: anthropic_api_key
+    category: CREDENTIAL
+    pattern: 'sk-ant-[A-Za-z0-9\-_]{90,}'
+    tier: BLOCKED
+
+  - name: openai_api_key
+    category: CREDENTIAL
+    pattern: 'sk-[A-Za-z0-9]{48}'
+    tier: BLOCKED
+
+  - name: github_pat_classic
+    category: CREDENTIAL
+    pattern: 'ghp_[A-Za-z0-9]{36}'
+    tier: BLOCKED
+
+  - name: github_pat_fine_grained
+    category: CREDENTIAL
+    pattern: 'github_pat_[A-Za-z0-9_]{82}'
+    tier: BLOCKED
+
+  - name: github_oauth
+    category: CREDENTIAL
+    pattern: 'gho_[A-Za-z0-9]{36}'
+    tier: BLOCKED
+
+  - name: github_server_token
+    category: CREDENTIAL
+    pattern: 'ghs_[A-Za-z0-9]{36}'
+    tier: BLOCKED
+
+  - name: slack_bot_token
+    category: CREDENTIAL
+    pattern: 'xoxb-[0-9A-Za-z\-]+'
+    tier: BLOCKED
+
+  - name: slack_user_token
+    category: CREDENTIAL
+    pattern: 'xoxp-[0-9A-Za-z\-]+'
+    tier: BLOCKED
+
+  - name: slack_app_token
+    category: CREDENTIAL
+    pattern: 'xapp-[0-9A-Za-z\-]+'
+    tier: BLOCKED
+
+  - name: jwt
+    category: CREDENTIAL
+    pattern: 'eyJ[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+'
+    tier: BLOCKED
+
+  - name: password_label
+    category: CREDENTIAL
+    pattern: '(?i)password\s*[:=]\s*\S+'
+    tier: BLOCKED
+
+  # SECRETS_IN_FORMAT - BLOCKED
+  - name: private_key_pem
+    category: SECRETS_IN_FORMAT
+    pattern: '-----BEGIN [A-Z ]*PRIVATE KEY-----'
+    tier: BLOCKED
+
+  - name: db_connection_string
+    category: SECRETS_IN_FORMAT
+    pattern: '(postgres|mysql|mongodb)(\+srv)?:\/\/[^\s:]+:[^\s@]+@'
+    tier: BLOCKED
+
+  # PII - BLOCKED
+  - name: ssn_formatted
+    category: PII
+    pattern: '\b\d{3}-\d{2}-\d{4}\b'
+    tier: BLOCKED
+
+  # FINANCIAL - BLOCKED (Luhn-gated)
+  - name: credit_card
+    category: FINANCIAL
+    pattern: '\b(?:\d[ \-]*?){13,19}\b'
+    tier: BLOCKED
+    luhn_check: true
+
+  # FINANCIAL - HIGH (context-gated)
+  - name: routing_number
+    category: FINANCIAL
+    pattern: '\b[0-9]{9}\b'
+    tier: HIGH
+    context_keywords:
+      - routing
+      - aba
+
+  # PII - LOW
+  - name: email
+    category: PII
+    pattern: '\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b'
+    tier: LOW
+
+  - name: us_phone
+    category: PII
+    pattern: '\b\(?\d{3}\)?[\-.\s]\d{3}[\-.\s]\d{4}\b'
+    tier: LOW
+
+  # PII - MEDIUM
+  - name: date_of_birth
+    category: PII
+    pattern: '\b(0[1-9]|1[0-2])[/\-](0[1-9]|[12]\d|3[01])[/\-](19|20)\d{2}\b'
+    tier: MEDIUM
+
+context_patterns:
+  - name: ssn_unformatted
+    category: PII
+    pattern: '\b\d{9}\b'
+    tier: BLOCKED
+    context_keywords:
+      - ssn
+      - social security
+
+  - name: gcp_service_account
+    category: SECRETS_IN_FORMAT
+    substring: '"type": "service_account"'
+    tier: BLOCKED

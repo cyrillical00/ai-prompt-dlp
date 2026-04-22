@@ -1,0 +1,107 @@
+[
+  {
+    "id": 1,
+    "label": "aws_access_key",
+    "expected_tier": "BLOCKED",
+    "expected_categories": ["CREDENTIAL"],
+    "input": "Here is my key: AKIAIOSFODNN7EXAMPLE please use it"
+  },
+  {
+    "id": 2,
+    "label": "anthropic_api_key",
+    "expected_tier": "BLOCKED",
+    "expected_categories": ["CREDENTIAL"],
+    "input": "sk-ant-api03-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabc"
+  },
+  {
+    "id": 3,
+    "label": "github_pat_classic",
+    "expected_tier": "BLOCKED",
+    "expected_categories": ["CREDENTIAL"],
+    "input": "Token: ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij"
+  },
+  {
+    "id": 4,
+    "label": "ssn_formatted",
+    "expected_tier": "BLOCKED",
+    "expected_categories": ["PII"],
+    "input": "My SSN is 123-45-6789 please keep this safe"
+  },
+  {
+    "id": 5,
+    "label": "credit_card_luhn_valid",
+    "expected_tier": "BLOCKED",
+    "expected_categories": ["FINANCIAL"],
+    "input": "Card number: 4111111111111111 expiry 12/26"
+  },
+  {
+    "id": 6,
+    "label": "private_key_pem",
+    "expected_tier": "BLOCKED",
+    "expected_categories": ["SECRETS_IN_FORMAT"],
+    "input": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----"
+  },
+  {
+    "id": 7,
+    "label": "db_connection_string",
+    "expected_tier": "BLOCKED",
+    "expected_categories": ["SECRETS_IN_FORMAT"],
+    "input": "Connect using: postgres://admin:supersecret@db.internal.company.com/prod"
+  },
+  {
+    "id": 8,
+    "label": "jwt",
+    "expected_tier": "BLOCKED",
+    "expected_categories": ["CREDENTIAL"],
+    "input": "Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+  },
+  {
+    "id": 9,
+    "label": "github_server_token",
+    "expected_tier": "BLOCKED",
+    "expected_categories": ["CREDENTIAL"],
+    "input": "Token: ghs_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij for CI pipeline auth"
+  },
+  {
+    "id": 10,
+    "label": "password_label",
+    "expected_tier": "BLOCKED",
+    "expected_categories": ["CREDENTIAL"],
+    "input": "password=hunter2 is what I use for the admin panel"
+  },
+  {
+    "id": 11,
+    "label": "email_and_phone_low",
+    "expected_tier": "LOW",
+    "expected_categories": ["PII"],
+    "input": "Contact me at jane.doe@example.com or 415-555-1234"
+  },
+  {
+    "id": 12,
+    "label": "dob_medium",
+    "expected_tier": "MEDIUM",
+    "expected_categories": ["PII"],
+    "input": "My date of birth is 07/15/1990"
+  },
+  {
+    "id": 13,
+    "label": "ssn_context_gated",
+    "expected_tier": "BLOCKED",
+    "expected_categories": ["PII"],
+    "input": "SSN: 123456789 please update the employee record"
+  },
+  {
+    "id": 14,
+    "label": "business_term_high",
+    "expected_tier": "HIGH",
+    "expected_categories": ["BUSINESS"],
+    "input": "We need to keep Project Titan confidential until Q3"
+  },
+  {
+    "id": 15,
+    "label": "gcp_service_account",
+    "expected_tier": "BLOCKED",
+    "expected_categories": ["SECRETS_IN_FORMAT"],
+    "input": "Here is the key file: {\"type\": \"service_account\", \"project_id\": \"myproject\"}"
+  }
+]

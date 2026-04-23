@@ -19,6 +19,9 @@ def _build_system_blocks(submission_id: int, tier: str, categories: list[str], m
         f"Encoding detected: {enc_label}\n"
         f"[END_METADATA]"
     )
+    # Only the static block carries cache_control. The dynamic block changes per
+    # submission (different ID, tier, categories) so caching it would miss every
+    # time and waste a cache write. Static block is the reuse anchor.
     return [
         {
             "type": "text",
@@ -35,7 +38,7 @@ def _build_system_blocks(submission_id: int, tier: str, categories: list[str], m
 DEMO_RESPONSE_TEMPLATE = """\
 **[DEMO MODE - simulated response]**
 
-*In production this response comes from Claude claude-sonnet-4 via the gated passthrough. \
+*In production this response comes from claude-sonnet-4-6 via the gated passthrough. \
 The prompt below was received after redaction by the classification layer.*
 
 ---
@@ -84,9 +87,9 @@ def send_to_claude(
     system_blocks = _build_system_blocks(submission_id, tier, categories, match_count, encoding)
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=1024,
-        temperature=1.0,
+        temperature=0.3,
         system=system_blocks,
         messages=[{"role": "user", "content": redacted_input}],
     )

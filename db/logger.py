@@ -18,7 +18,12 @@ def init_db():
     conn = _connect()
     schema = SCHEMA_PATH.read_text()
     conn.executescript(schema)
-    conn.commit()
+    # Migration: add is_seed column to existing DBs that predate this column
+    try:
+        conn.execute("ALTER TABLE submissions ADD COLUMN is_seed INTEGER DEFAULT 0")
+        conn.commit()
+    except Exception:
+        pass  # column already exists
     conn.close()
 
 
@@ -28,6 +33,7 @@ def insert_submission(
     redacted_preview: str,
     original_length: int,
     encoding_detected: str | None,
+    is_seed: int = 0,
 ) -> int:
     conn = _connect()
     ts = datetime.now(timezone.utc).isoformat()
@@ -35,11 +41,11 @@ def insert_submission(
         """
         INSERT INTO submissions
             (timestamp, risk_tier, matched_patterns, redacted_preview,
-             original_length, encoding_detected, passed_to_llm)
-        VALUES (?, ?, ?, ?, ?, ?, 0)
+             original_length, encoding_detected, passed_to_llm, is_seed)
+        VALUES (?, ?, ?, ?, ?, ?, 0, ?)
         """,
         (ts, risk_tier, json.dumps(matched_patterns), redacted_preview[:500],
-         original_length, encoding_detected),
+         original_length, encoding_detected, is_seed),
     )
     submission_id = cur.lastrowid
 

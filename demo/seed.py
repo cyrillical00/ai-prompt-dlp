@@ -47,6 +47,81 @@ SUBMISSIONS = [
         "llm_response_id": None,
         "reason_blocked": "Detected: ssn_formatted",
     },
+    # --- 3 MEDIUM (single DOB, no escalation) ---
+    {
+        "timestamp": _ts(17, 13, 0),
+        "risk_tier": "MEDIUM",
+        "matched_patterns": [{"name": "date_of_birth", "category": "PII", "tier": "MEDIUM", "encoding": None}],
+        "redacted_preview": "Please update the employee file. DOB is **/**/****. Everything else is current.",
+        "original_length": 88,
+        "encoding_detected": None,
+        "passed_to_llm": 0,
+        "llm_response_id": None,
+        "reason_blocked": None,
+    },
+    {
+        "timestamp": _ts(12, 11, 30),
+        "risk_tier": "MEDIUM",
+        "matched_patterns": [{"name": "date_of_birth", "category": "PII", "tier": "MEDIUM", "encoding": None}],
+        "redacted_preview": "Background check form: candidate DOB is **/**/****. Please confirm HR has the signed release.",
+        "original_length": 105,
+        "encoding_detected": None,
+        "passed_to_llm": 0,
+        "llm_response_id": None,
+        "reason_blocked": None,
+    },
+    {
+        "timestamp": _ts(6, 10, 15),
+        "risk_tier": "MEDIUM",
+        "matched_patterns": [{"name": "date_of_birth_iso", "category": "PII", "tier": "MEDIUM", "encoding": None}],
+        "redacted_preview": "Onboarding checklist for new hire. Date of birth (ISO): **/**/****. Provide to payroll.",
+        "original_length": 91,
+        "encoding_detected": None,
+        "passed_to_llm": 0,
+        "llm_response_id": None,
+        "reason_blocked": None,
+    },
+    # --- 1 BLOCKED with base64 encoding ---
+    {
+        "timestamp": _ts(19, 9, 45),
+        "risk_tier": "BLOCKED",
+        "matched_patterns": [{"name": "aws_access_key", "category": "CREDENTIAL", "tier": "BLOCKED", "encoding": "base64"}],
+        "redacted_preview": "Config payload for the deploy job: [REDACTED:ENCODED_CREDENTIAL]",
+        "original_length": 142,
+        "encoding_detected": "base64",
+        "passed_to_llm": 0,
+        "llm_response_id": None,
+        "reason_blocked": "Detected: aws_access_key (base64-encoded)",
+    },
+    # --- 2 multi-category LOW (email + phone) ---
+    {
+        "timestamp": _ts(22, 16, 0),
+        "risk_tier": "LOW",
+        "matched_patterns": [
+            {"name": "email", "category": "PII", "tier": "LOW", "encoding": None},
+            {"name": "us_phone", "category": "PII", "tier": "LOW", "encoding": None},
+        ],
+        "redacted_preview": "Please reach out to the vendor at v***@***.com or call ***-***-4821 to confirm the renewal.",
+        "original_length": 112,
+        "encoding_detected": None,
+        "passed_to_llm": 1,
+        "llm_response_id": "demo-llm-035",
+        "reason_blocked": None,
+    },
+    {
+        "timestamp": _ts(4, 14, 45),
+        "risk_tier": "LOW",
+        "matched_patterns": [
+            {"name": "email", "category": "PII", "tier": "LOW", "encoding": None},
+            {"name": "us_phone", "category": "PII", "tier": "LOW", "encoding": None},
+        ],
+        "redacted_preview": "New contractor contact: j***@***.com, mobile ***-***-7733. Please add to the org chart.",
+        "original_length": 99,
+        "encoding_detected": None,
+        "passed_to_llm": 0,
+        "llm_response_id": None,
+        "reason_blocked": None,
+    },
     # --- 2 HIGH ---
     {
         "timestamp": _ts(21, 11, 5),
@@ -162,8 +237,8 @@ def seed_if_empty():
             INSERT INTO submissions
                 (timestamp, risk_tier, matched_patterns, redacted_preview,
                  original_length, encoding_detected, passed_to_llm,
-                 llm_response_id, reason_blocked)
-            VALUES (?,?,?,?,?,?,?,?,?)
+                 llm_response_id, reason_blocked, is_seed)
+            VALUES (?,?,?,?,?,?,?,?,?,1)
             """,
             (
                 row["timestamp"],

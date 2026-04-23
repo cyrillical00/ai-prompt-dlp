@@ -62,6 +62,7 @@ def render(registry: PatternRegistry, disabled_categories: set[str], demo_mode: 
             "final_tier": result.final_tier,
             "matches": match_dicts,
             "redacted": redacted,
+            "original_length": len(text),
             "encoding_detected": result.encoding_detected,
             "escalation_applied": result.escalation_applied,
             "categories": list({m.category for m in result.matches}),
@@ -79,9 +80,16 @@ def render(registry: PatternRegistry, disabled_categories: set[str], demo_mode: 
     tier = last["final_tier"]
     st.markdown(f"**Risk Tier:** {TIER_LABELS.get(tier, tier)}")
 
+    ESCALATION_LABELS = {
+        "E1": "E1 (2+ MEDIUM -> HIGH)",
+        "E2a": "E2a (10+ LOW -> MEDIUM)",
+        "E2b": "E2b (25+ LOW+MEDIUM -> HIGH)",
+    }
     if last["escalation_applied"]:
-        st.caption(f"Escalation rules applied: {', '.join(last['escalation_applied'])}")
+        labels = [ESCALATION_LABELS.get(e, e) for e in last["escalation_applied"]]
+        st.caption(f"Escalation applied: {', '.join(labels)}")
 
+    TIER_RANK = {"BLOCKED": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "NONE": 4}
     if last["matches"]:
         import pandas as pd
         rows = []
@@ -91,13 +99,19 @@ def render(registry: PatternRegistry, disabled_categories: set[str], demo_mode: 
                 "Pattern": m["name"],
                 "Tier": m["tier"],
                 "Encoded": m.get("encoding") or "",
+                "_rank": TIER_RANK.get(m["tier"], 99),
             })
+        rows.sort(key=lambda r: r["_rank"])
+        for r in rows:
+            del r["_rank"]
         st.dataframe(pd.DataFrame(rows), use_container_width=True)
     else:
         st.info("No sensitive patterns detected.")
 
     st.subheader("Redacted Preview")
     st.code(last["redacted"], language=None)
+    if len(last["redacted"]) >= 498:
+        st.caption(f"Preview truncated at 500 chars. Original input was {last.get('original_length', '?')} chars.")
 
     if tier == "BLOCKED":
         st.error("This prompt contains BLOCKED content and cannot be sent to Claude.")

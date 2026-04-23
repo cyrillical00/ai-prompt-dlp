@@ -34,11 +34,20 @@ class PatternRegistry:
     def _compile(self, cfg: dict):
         for p in cfg.get("regex_patterns", []):
             entry = dict(p)
-            entry["compiled"] = re.compile(p["pattern"])
+            entry["compiled"] = re.compile(p["pattern"], self._flags(p))
             self.regex_patterns.append(entry)
 
         for p in cfg.get("context_patterns", []):
             entry = dict(p)
             if "pattern" in p:
-                entry["compiled"] = re.compile(p["pattern"])
+                entry["compiled"] = re.compile(p["pattern"], self._flags(p))
             self.context_patterns.append(entry)
+
+    @staticmethod
+    def _flags(p: dict) -> int:
+        flags = 0
+        for name in p.get("pattern_flags", "").split("|"):
+            name = name.strip()
+            if name:
+                flags |= getattr(re, name, 0)
+        return flags

@@ -4,6 +4,10 @@ from classifier.patterns import PatternRegistry
 from classifier.decoder import find_base64_candidates
 from classifier.redactor import is_placeholder
 
+
+class DLPError(Exception):
+    pass
+
 TIER_ORDER = ["BLOCKED", "HIGH", "MEDIUM", "LOW", "NONE"]
 
 
@@ -61,7 +65,10 @@ def classify(
     text: str,
     registry: PatternRegistry,
     disabled_categories: set[str] | None = None,
+    _depth: int = 0,
 ) -> ClassificationResult:
+    if _depth == 0 and len(text) > 50_000:
+        raise DLPError("Input exceeds 50,000 character limit. Split into smaller chunks.")
     disabled = disabled_categories or set()
     matches: list[Match] = []
     seen_spans: dict[tuple[int, int], Match] = {}
@@ -145,9 +152,12 @@ def classify(
                     ))
 
     encoding_detected = None
-    b64_candidates = find_base64_candidates(text)
+    if _depth == 0:
+      b64_candidates = find_base64_candidates(text)
+    else:
+      b64_candidates = []
     for start, end, decoded_text in b64_candidates:
-        sub_result = classify(decoded_text, registry, disabled)
+        sub_result = classify(decoded_text, registry, disabled, _depth=_depth + 1)
         if sub_result.matches:
             encoding_detected = "base64"
             for sub_match in sub_result.matches:
@@ -177,7 +187,7 @@ def classify(
     final_tier = base_tier
 
     if final_tier != "BLOCKED":
-        medium_count = sum(1 for m in all_matches if m.tier == "MEDIUM" and not m.encoding)
+        medium_count = sum(1 for m in all_matches if m.tier == "MEDIUM")
         low_count = sum(1 for m in all_matches if m.tier == "LOW")
         low_plus_medium = sum(1 for m in all_matches if m.tier in ("LOW", "MEDIUM"))
 

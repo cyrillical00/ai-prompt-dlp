@@ -35,7 +35,8 @@ def render():
 
     most_triggered = "none"
     if not hits_df.empty:
-        most_triggered = hits_df["pattern_name"].value_counts().idxmax()
+        vc = hits_df["pattern_name"].value_counts()
+        most_triggered = f"{vc.idxmax()} ({vc.max()}x)"
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Total Submissions", total)
@@ -74,14 +75,33 @@ def render():
     st.divider()
     st.subheader("Recent Submissions")
 
+    tier_filter = st.multiselect(
+        "Filter by tier",
+        ["LOW", "MEDIUM", "HIGH", "BLOCKED"],
+        default=["LOW", "MEDIUM", "HIGH", "BLOCKED"],
+        key="tier_filter",
+    )
+
     display_cols = ["timestamp", "risk_tier", "redacted_preview", "passed_to_llm"]
+    if "is_seed" in df.columns:
+        display_cols.append("is_seed")
     display_df = df[display_cols].copy()
+
+    if "is_seed" in display_df.columns:
+        display_df["risk_tier"] = display_df.apply(
+            lambda r: f"SEED | {r['risk_tier']}" if r.get("is_seed") == 1 else r["risk_tier"],
+            axis=1,
+        )
+        display_df = display_df.drop(columns=["is_seed"])
+
+    display_df = display_df[df["risk_tier"].isin(tier_filter)]
     display_df.columns = ["Timestamp", "Tier", "Redacted Preview", "Sent to LLM"]
     display_df["Sent to LLM"] = display_df["Sent to LLM"].map({0: "No", 1: "Yes"})
     display_df["Redacted Preview"] = display_df["Redacted Preview"].str[:80] + "..."
 
     total_pages = max(1, (len(display_df) + PAGE_SIZE - 1) // PAGE_SIZE)
     page = st.number_input("Page", min_value=1, max_value=total_pages, value=1) - 1
+    page = max(0, min(page, total_pages - 1))
     start = page * PAGE_SIZE
     end = start + PAGE_SIZE
     st.dataframe(display_df.iloc[start:end], use_container_width=True)

@@ -1,11 +1,12 @@
 import sys
 import os
+import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
 from classifier.patterns import PatternRegistry
-from classifier.engine import classify, _luhn
-from classifier.redactor import is_placeholder
+from classifier.engine import classify, _luhn, DLPError
+from classifier.redactor import is_placeholder, redact
 from classifier.decoder import find_base64_candidates
 import base64
 
@@ -261,3 +262,163 @@ def test_ssn_unformatted_without_context(registry):
     result = classify("order 847291034 shipped", registry)
     ssn_matches = [m for m in result.matches if m.name == "ssn_unformatted"]
     assert len(ssn_matches) == 0
+
+
+# --- New pattern tests (Block 2) ---
+
+def test_openai_project_key_detected(registry):
+    key = "sk-proj-" + "A" * 100
+    result = classify(f"Using key {key}", registry)
+    assert result.final_tier == "BLOCKED"
+    assert any(m.name == "openai_project_key" for m in result.matches)
+
+
+def test_azure_storage_connection_detected(registry):
+    key = "A" * 86 + "=="
+    result = classify(f"AccountKey={key}", registry)
+    assert result.final_tier == "BLOCKED"
+    assert any(m.name == "azure_storage_connection" for m in result.matches)
+
+
+def test_bearer_token_detected(registry):
+    result = classify("Authorization: Bearer eyJhbGciOiJSUzI1NiJ9.payload.signature", registry)
+    assert result.final_tier == "BLOCKED"
+    assert any(m.name == "bearer_token" for m in result.matches)
+
+
+def test_iso_dob_detected(registry):
+    result = classify("Employee born 1985-07-15 per HR records.", registry)
+    assert any(m.name == "date_of_birth_iso" for m in result.matches)
+    assert result.final_tier == "MEDIUM"
+
+
+def test_pem_requires_end_block(registry):
+    text_without_end = "-----BEGIN RSA PRIVATE KEY-----\nABCDEF\n"
+    result = classify(text_without_end, registry)
+    pem = [m for m in result.matches if m.name == "private_key_pem"]
+    assert len(pem) == 0
+
+
+def test_pem_with_end_block_detected(registry):
+    text = "-----BEGIN RSA PRIVATE KEY-----\nABCDEFGHIJ\n-----END RSA PRIVATE KEY-----"
+    result = classify(text, registry)
+    assert result.final_tier == "BLOCKED"
+
+
+# --- Redactor unit tests (Pass 27) ---
+
+def test_redact_email_masking():
+    text = "Contact john.doe@acme.com for info."
+    result = redact(text, [], [])
+    assert "j***@***.com" in result
+    assert "john.doe" not in result
+
+
+def test_redact_phone_masking():
+    text = "Call 415-555-1234 for support."
+    result = redact(text, [], [])
+    assert "***-***-1234" in result
+
+
+def test_redact_ssn_masking():
+    text = "SSN on file: 123-45-6789"
+    result = redact(text, [], [])
+    assert "***-**-6789" in result
+    assert "123-45" not in result
+
+
+def test_redact_dob_masking():
+    text = "Date of birth: 07/15/1985"
+    result = redact(text, [], [])
+    assert "**/**/****" in result
+    assert "07/15/1985" not in result
+
+
+def test_redact_credential_full_replacement():
+    text = "Key: AKIAIOSFODNN7EXAMPLE use this."
+    result = redact(text, [], [])
+    assert "[REDACTED:CREDENTIAL]" in result
+    assert "AKIA" not in result
+
+
+def test_redact_business_term():
+    text = "Keep Project Titan confidential."
+    result = redact(text, [], ["Project Titan"])
+    assert "[REDACTED:BUSINESS]" in result
+    assert "Titan" not in result
+
+
+def test_redact_encoded_credential_span():
+    b64_payload = base64.b64encode(b"secret token data here").decode()
+    text = f"Config: {b64_payload} rest"
+    spans = [(8, 8 + len(b64_payload), "CREDENTIAL", "base64")]
+    result = redact(text, spans, [])
+    assert "[REDACTED:ENCODED_CREDENTIAL]" in result
+
+
+# --- MEDIUM and combined category tests (Pass 28) ---
+
+def test_single_dob_is_medium_not_escalated(registry):
+    result = classify("DOB: 07/15/1990", registry)
+    assert result.final_tier == "MEDIUM"
+    assert "E1" not in result.escalation_applied
+
+
+def test_email_and_phone_together_is_low(registry):
+    result = classify("Reach me at hello@example.com or 415-555-1234", registry)
+    cats = {m.category for m in result.matches}
+    assert "PII" in cats
+    assert result.final_tier == "LOW"
+
+
+def test_dob_and_email_tier_is_medium(registry):
+    result = classify("DOB: 03/22/1985. Contact: jane@acme.com", registry)
+    assert result.final_tier == "MEDIUM"
+
+
+def test_ssn_and_email_blocked_dominates(registry):
+    result = classify("SSN: 123-45-6789. Email: user@corp.com", registry)
+    assert result.final_tier == "BLOCKED"
+
+
+# --- Edge case tests (Pass 29) ---
+
+def test_empty_string_returns_low(registry):
+    result = classify("", registry)
+    assert result.final_tier == "LOW"
+    assert result.matches == []
+
+
+def test_exactly_50k_chars_classifies(registry):
+    text = "a" * 50_000
+    result = classify(text, registry)
+    assert result.final_tier == "LOW"
+
+
+def test_over_50k_raises_dlp_error(registry):
+    text = "a" * 50_001
+    with pytest.raises(DLPError):
+        classify(text, registry)
+
+
+def test_business_term_with_special_chars(registry):
+    r = PatternRegistry(extra_terms=["R&D budget"])
+    result = classify("We need to discuss the R&D budget next quarter.", r)
+    assert result.final_tier == "HIGH"
+
+
+def test_disabled_credential_category(registry):
+    text = "AKIAIOSFODNN7EXAMPLE is the key"
+    result = classify(text, registry, disabled_categories={"CREDENTIAL"})
+    assert all(m.category != "CREDENTIAL" for m in result.matches)
+    assert result.final_tier != "BLOCKED"
+
+
+# --- Performance test (Pass 30) ---
+
+def test_50k_benign_classifies_under_2s(registry):
+    text = ("Can you help me summarize the quarterly report for stakeholders? " * 750)[:50_000]
+    start = time.perf_counter()
+    classify(text, registry)
+    elapsed = time.perf_counter() - start
+    assert elapsed < 2.0, f"Classification took {elapsed:.2f}s, expected < 2s"

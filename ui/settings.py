@@ -1,5 +1,5 @@
 import streamlit as st
-from db.logger import clear_all_logs
+from db.logger import clear_all_logs, query_submissions
 
 CATEGORIES = ["PII", "FINANCIAL", "CREDENTIAL", "BUSINESS", "SECRETS_IN_FORMAT"]
 
@@ -32,7 +32,7 @@ def render(business_terms: list[str]):
         source = "(session)" if term in session_terms else "(config)"
         st.checkbox(f"{term} {source}", value=True, key=f"term_{term}", disabled=True)
 
-    new_term = st.text_input("Add term (this session only)")
+    new_term = st.text_input("Add term (this session only)", key=f"new_term_{len(session_terms)}")
     if st.button("Add term"):
         if new_term.strip() and new_term not in all_terms:
             session_terms.append(new_term.strip())
@@ -54,7 +54,8 @@ def render(business_terms: list[str]):
             st.session_state["confirm_clear"] = True
             st.rerun()
     else:
-        st.warning("Are you sure? This cannot be undone.")
+        n = len(query_submissions())
+        st.warning(f"This will delete {n} submission(s) and all associated pattern hits. This cannot be undone.")
         col1, col2 = st.columns(2)
         if col1.button("Yes, clear all logs", type="primary"):
             clear_all_logs()

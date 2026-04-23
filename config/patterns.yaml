@@ -15,6 +15,11 @@ regex_patterns:
     pattern: 'sk-[A-Za-z0-9]{48}'
     tier: BLOCKED
 
+  - name: openai_project_key
+    category: CREDENTIAL
+    pattern: 'sk-proj-[A-Za-z0-9\-_]{100,}'
+    tier: BLOCKED
+
   - name: github_pat_classic
     category: CREDENTIAL
     pattern: 'ghp_[A-Za-z0-9]{36}'
@@ -37,17 +42,17 @@ regex_patterns:
 
   - name: slack_bot_token
     category: CREDENTIAL
-    pattern: 'xoxb-[0-9A-Za-z\-]+'
+    pattern: 'xoxb-[0-9A-Za-z\-]{20,}'
     tier: BLOCKED
 
   - name: slack_user_token
     category: CREDENTIAL
-    pattern: 'xoxp-[0-9A-Za-z\-]+'
+    pattern: 'xoxp-[0-9A-Za-z\-]{20,}'
     tier: BLOCKED
 
   - name: slack_app_token
     category: CREDENTIAL
-    pattern: 'xapp-[0-9A-Za-z\-]+'
+    pattern: 'xapp-[0-9A-Za-z\-]{15,}'
     tier: BLOCKED
 
   - name: jwt
@@ -63,7 +68,8 @@ regex_patterns:
   # SECRETS_IN_FORMAT - BLOCKED
   - name: private_key_pem
     category: SECRETS_IN_FORMAT
-    pattern: '-----BEGIN [A-Z ]*PRIVATE KEY-----'
+    pattern: '-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----'
+    pattern_flags: DOTALL
     tier: BLOCKED
 
   - name: db_connection_string
@@ -109,6 +115,22 @@ regex_patterns:
     category: PII
     pattern: '\b(0[1-9]|1[0-2])[/\-](0[1-9]|[12]\d|3[01])[/\-](19|20)\d{2}\b'
     tier: MEDIUM
+
+  - name: date_of_birth_iso
+    category: PII
+    pattern: '\b(19|20)\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])\b'
+    tier: MEDIUM
+
+  # CREDENTIAL - Azure and Bearer
+  - name: azure_storage_connection
+    category: CREDENTIAL
+    pattern: 'AccountKey=[A-Za-z0-9+/]{86}=='
+    tier: BLOCKED
+
+  - name: bearer_token
+    category: CREDENTIAL
+    pattern: '(?i)Authorization\s*:\s*Bearer\s+[A-Za-z0-9\-_.~+/]+=*'
+    tier: BLOCKED
 
 context_patterns:
   - name: ssn_unformatted

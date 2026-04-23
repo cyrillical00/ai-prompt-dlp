@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS submissions (
     encoding_detected TEXT,
     passed_to_llm     INTEGER DEFAULT 0,
     llm_response_id   TEXT,
-    reason_blocked    TEXT
+    reason_blocked    TEXT,
+    is_seed           INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS pattern_hits (

@@ -67,7 +67,7 @@ def render():
 
     with col_b:
         st.subheader("Submissions Over Time")
-        df["date"] = pd.to_datetime(df["timestamp"]).dt.date
+        df["date"] = pd.to_datetime(df["timestamp"], utc=True).dt.date
         time_series = df.groupby("date").size().reset_index(name="Count")
         time_series = time_series.set_index("date")
         st.line_chart(time_series)

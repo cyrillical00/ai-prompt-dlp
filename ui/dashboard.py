@@ -75,12 +75,16 @@ def render():
     st.divider()
     st.subheader("Recent Submissions")
 
+    prev_filter = st.session_state.get("tier_filter_prev", None)
     tier_filter = st.multiselect(
         "Filter by tier",
         ["LOW", "MEDIUM", "HIGH", "BLOCKED"],
         default=["LOW", "MEDIUM", "HIGH", "BLOCKED"],
         key="tier_filter",
     )
+    if tier_filter != prev_filter:
+        st.session_state.tier_filter_prev = tier_filter
+        st.session_state.dash_page = 0
 
     display_cols = ["timestamp", "risk_tier", "redacted_preview", "passed_to_llm"]
     if "is_seed" in df.columns:
@@ -99,13 +103,33 @@ def render():
     display_df["Sent to LLM"] = display_df["Sent to LLM"].map({0: "No", 1: "Yes"})
     display_df["Redacted Preview"] = display_df["Redacted Preview"].str[:80] + "..."
 
-    total_pages = max(1, (len(display_df) + PAGE_SIZE - 1) // PAGE_SIZE)
-    page = st.number_input("Page", min_value=1, max_value=total_pages, value=1) - 1
-    page = max(0, min(page, total_pages - 1))
+    total_rows = len(display_df)
+    total_pages = max(1, (total_rows + PAGE_SIZE - 1) // PAGE_SIZE)
+
+    if "dash_page" not in st.session_state:
+        st.session_state.dash_page = 0
+    st.session_state.dash_page = max(0, min(st.session_state.dash_page, total_pages - 1))
+
+    page = st.session_state.dash_page
     start = page * PAGE_SIZE
     end = start + PAGE_SIZE
     st.dataframe(display_df.iloc[start:end], use_container_width=True)
-    st.caption(f"Showing {start + 1}-{min(end, len(display_df))} of {len(display_df)}")
+    st.caption(f"Showing {start + 1}-{min(end, total_rows)} of {total_rows}")
+
+    col_prev, col_info, col_next = st.columns([1, 2, 1])
+    with col_prev:
+        if st.button("Prev", disabled=page == 0, use_container_width=True):
+            st.session_state.dash_page -= 1
+            st.rerun()
+    with col_info:
+        st.markdown(
+            f"<p style='text-align:center;margin-top:8px'>Page {page + 1} of {total_pages}</p>",
+            unsafe_allow_html=True,
+        )
+    with col_next:
+        if st.button("Next", disabled=page >= total_pages - 1, use_container_width=True):
+            st.session_state.dash_page += 1
+            st.rerun()
 
     st.divider()
     csv = df.to_csv(index=False).encode("utf-8")

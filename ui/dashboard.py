@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 from db.logger import query_submissions, query_pattern_hits
+
+_CHART_CONFIG = {"scrollZoom": False, "displayModeBar": False}
 
 WINDOW_OPTIONS = {
     "All time": None,
@@ -50,8 +53,9 @@ def render():
     st.subheader("Risk Tier Distribution")
     tier_counts = df["risk_tier"].value_counts().reset_index()
     tier_counts.columns = ["Tier", "Count"]
-    tier_counts = tier_counts.set_index("Tier")
-    st.bar_chart(tier_counts)
+    fig_tier = px.bar(tier_counts, x="Tier", y="Count", color_discrete_sequence=["#2D6A9F"])
+    fig_tier.update_layout(margin=dict(t=10, b=10), dragmode=False)
+    st.plotly_chart(fig_tier, use_container_width=True, config=_CHART_CONFIG)
 
     col_a, col_b = st.columns(2)
 
@@ -60,8 +64,9 @@ def render():
         if not hits_df.empty:
             top10 = hits_df["pattern_name"].value_counts().head(10).reset_index()
             top10.columns = ["Pattern", "Hits"]
-            top10 = top10.set_index("Pattern")
-            st.bar_chart(top10)
+            fig_top = px.bar(top10, x="Pattern", y="Hits", color_discrete_sequence=["#2D6A9F"])
+            fig_top.update_layout(margin=dict(t=10, b=10), dragmode=False)
+            st.plotly_chart(fig_top, use_container_width=True, config=_CHART_CONFIG)
         else:
             st.info("No pattern hits yet.")
 
@@ -69,8 +74,9 @@ def render():
         st.subheader("Submissions Over Time")
         df["date"] = pd.to_datetime(df["timestamp"], utc=True).dt.date
         time_series = df.groupby("date").size().reset_index(name="Count")
-        time_series = time_series.set_index("date")
-        st.line_chart(time_series)
+        fig_time = px.line(time_series, x="date", y="Count", color_discrete_sequence=["#2D6A9F"])
+        fig_time.update_layout(margin=dict(t=10, b=10), dragmode=False)
+        st.plotly_chart(fig_time, use_container_width=True, config=_CHART_CONFIG)
 
     st.divider()
     st.subheader("Recent Submissions")

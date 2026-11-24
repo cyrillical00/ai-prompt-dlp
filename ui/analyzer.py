@@ -3,7 +3,7 @@ from classifier.patterns import PatternRegistry
 from classifier.engine import classify, result_to_match_dicts
 from classifier.redactor import redact
 from db.logger import insert_submission, mark_passed_to_llm, mark_blocked
-from llm.claude_client import send_to_claude
+from llm.claude_client import send_to_claude, block_high_tier
 
 TIER_COLORS = {
     "LOW": "green",
@@ -122,8 +122,22 @@ def render(registry: PatternRegistry, disabled_categories: set[str], demo_mode: 
             help=f"Blocked: {', '.join(blocked_names)}",
         )
     else:
+        high_ack = True
+        high_blocked = tier == "HIGH" and not demo_mode and block_high_tier()
+        if tier == "HIGH" and not demo_mode:
+            if high_blocked:
+                st.error("HIGH-tier prompts are blocked from forwarding by policy.")
+            else:
+                st.warning(
+                    "HIGH tier: redaction is pattern-based and may miss sensitive data. "
+                    "Review the redacted preview above before sending."
+                )
+                high_ack = st.checkbox(
+                    "I reviewed the redacted preview and accept sending it to the model",
+                    key=f"high_ack_{last['submission_id']}",
+                )
         btn_label = "Send to Claude with risk annotation (Demo)" if demo_mode else "Send to Claude with risk annotation"
-        if st.button(btn_label, type="secondary"):
+        if st.button(btn_label, type="secondary", disabled=high_blocked or not high_ack):
             spinner_msg = "Generating demo response..." if demo_mode else "Sending to Claude..."
             with st.spinner(spinner_msg):
                 try:
@@ -135,6 +149,7 @@ def render(registry: PatternRegistry, disabled_categories: set[str], demo_mode: 
                         encoding=last["encoding_detected"],
                         redacted_input=last["redacted"],
                         demo_mode=demo_mode,
+                        high_tier_ack=high_ack,
                     )
                     mark_passed_to_llm(last["submission_id"], response_id)
                     st.session_state["last_result"]["llm_response"] = response_text
